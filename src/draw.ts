@@ -20,8 +20,8 @@ export const drawFigure = (figure: Figure, x: number, y: number, ctx: CanvasRend
             if (row[colIndex] == 1) {
                 for (let i = 0; i < FIGURE_MULTIPLIER; i++)
                     for (let j = 0; j < FIGURE_MULTIPLIER; j++) {
-                        ctx.fillRect((colIndex * SQUARE_SIZE + y + i) * SQUARE_SIZE,
-                            (rowIndex * SQUARE_SIZE + x + j) * SQUARE_SIZE, SQUARE_SIZE, SQUARE_SIZE);
+                        ctx.fillRect((colIndex * SQUARE_SIZE + x + i) * SQUARE_SIZE,
+                            (rowIndex * SQUARE_SIZE + y + j) * SQUARE_SIZE, SQUARE_SIZE, SQUARE_SIZE);
                     }
             }
         }
@@ -30,7 +30,7 @@ export const drawFigure = (figure: Figure, x: number, y: number, ctx: CanvasRend
 
 export const clearNextFigure = (x: number, y: number, ctx: CanvasRenderingContext2D) => {
     ctx.fillStyle = "#FFF"
-    ctx.fillRect(y * SQUARE_SIZE, x * SQUARE_SIZE, 4 * SQUARE_SIZE * SQUARE_SIZE, 2 * SQUARE_SIZE * SQUARE_SIZE);
+    ctx.fillRect(x * SQUARE_SIZE, y * SQUARE_SIZE, 4 * SQUARE_SIZE * SQUARE_SIZE, 2 * SQUARE_SIZE * SQUARE_SIZE);
 }
 
 export const drawStats = (ctx: CanvasRenderingContext2D) => {

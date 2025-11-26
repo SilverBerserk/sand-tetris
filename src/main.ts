@@ -28,8 +28,8 @@ document.fonts.ready.then(
     })
 
 const spawnFigure = (newFigure: Figure) => {
-    fig_x = 0;
-    fig_y = COLS / 2 - 8;
+    fig_y = 0;
+    fig_x = COLS / 2 - 8;
 
     if (!checkForColision(newFigure, arr, fig_x, fig_y))
         return newFigure
@@ -51,7 +51,7 @@ const init = () => {
     nextFigure = randomFigure();
     lines = 0;
     score = 0
-    drawFigure(nextFigure, ROWS / 2, COLS + 10, ctx)
+    drawFigure(nextFigure, COLS + 10, ROWS / 2, ctx)
 }
 
 init()
@@ -64,14 +64,13 @@ const interval = setInterval(async () => {
     drawCanvas(arr, ctx);
     drawFigure(currentFigure, fig_x, fig_y, ctx);
 
-    if (checkBorders(currentFigure, fig_x) || checkForColision(currentFigure, arr, fig_x, fig_y, "DOWN")) {
+    if (checkBorders(currentFigure, fig_x, fig_y) || checkForColision(currentFigure, arr, fig_x, fig_y, "DOWN")) {
 
         isProcessing = true;  // 🔒 lock
 
         pinFigure(arr, currentFigure, fig_x, fig_y);
         await breakDown(arr, ctx);    // wait for sand-fall animation
         const { replacedValues, conectedLines } = await checkConnection(arr, ctx)
-        console.log({ replacedValues, conectedLines })
         lines += conectedLines;
         score += replacedValues;
         drawLinesNumber(lines, ctx)
@@ -79,46 +78,45 @@ const interval = setInterval(async () => {
         // currentFigure = spawnFigure();  // generate only ONCE
         currentFigure = spawnFigure(nextFigure)
         nextFigure = randomFigure()
-        clearNextFigure(ROWS / 2, COLS + 10, ctx)
-        drawFigure(nextFigure, ROWS / 2, COLS + 10, ctx)
+        clearNextFigure(COLS + 10, ROWS / 2,  ctx)
+        drawFigure(nextFigure,COLS + 10, ROWS / 2 , ctx)
 
         isProcessing = false; // 🔓 unlock
     }
     else {
-        fig_x++;
+        fig_y++;
     }
 }, 50);
 
 
 window.addEventListener("keydown", (e) => {
-    console.log(e.key)
     e.preventDefault();
     if (e.key === "ArrowLeft") {
-        if (fig_y > 0)
-            fig_y--;
+        if (fig_x > 0)
+            fig_x--;
     }
     if (e.key === "ArrowRight") {
-        if (fig_y + (currentFigure?.shape[0].length ?? 0) * FIGURE_MULTIPLIER < COLS)
-            fig_y++;
+        if (fig_x + (currentFigure?.shape[0].length ?? 0) * FIGURE_MULTIPLIER < COLS)
+            fig_x++;
     }
     if (e.key === "ArrowUp") {
         if (currentFigure) {
             const newFigure = spingFigure(currentFigure)
-            if (!checkForColision(newFigure, arr, fig_x, fig_y) && !checkBorders(newFigure, fig_x))
+            if (!checkForColision(newFigure, arr, fig_x, fig_y) && !checkBorders(newFigure, fig_x, fig_y))
                 currentFigure = newFigure;
         }
     }
     if (e.key === "ArrowDown") {
         if (currentFigure) {
             const newFigure = spingFigure(currentFigure, true)
-            if (!checkForColision(newFigure, arr, fig_x, fig_y) && !checkBorders(newFigure, fig_x))
+            if (!checkForColision(newFigure, arr, fig_x, fig_y) && !checkBorders(newFigure, fig_x, fig_y))
                 currentFigure = newFigure;
         }
     }
     if (e.key === " ") {
         if (currentFigure) {
-            while (!checkBorders(currentFigure, fig_x) && !checkForColision(currentFigure, arr, fig_x, fig_y, "DOWN")) {
-                fig_x++
+            while (!checkBorders(currentFigure, fig_x, fig_y) && !checkForColision(currentFigure, arr, fig_x, fig_y, "DOWN")) {
+                fig_y++
             }
         }
     }

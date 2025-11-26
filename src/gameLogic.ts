@@ -148,7 +148,6 @@ export const checkConnection = async (arr: number[][], ctx: CanvasRenderingConte
         replacedValues = replaceValue(arr, 7, 0)
         await breakDown(arr, ctx);
     }
-    console.log({replacedValues,conectedLines})
         return {replacedValues,conectedLines};
 };
 
@@ -160,13 +159,12 @@ export const pinFigure = (arr: number[][], figure: Figure, x: number, y: number)
             if (row[colIndex] == 1) {
                 for (let i = 0; i < FIGURE_MULTIPLIER; i++)
                     for (let j = 0; j < FIGURE_MULTIPLIER; j++) {
-                        arr[rowIndex * FIGURE_MULTIPLIER + x + j][colIndex * FIGURE_MULTIPLIER + y + i] = figure.value
+                        arr[rowIndex * FIGURE_MULTIPLIER + y + j][colIndex * FIGURE_MULTIPLIER + x + i] = figure.value
                     }
             }
         }
     }
 }
-
 
 export const spingFigure = (figure: Figure, clockwise: boolean = false) => {
     const { shape } = figure
@@ -186,5 +184,3 @@ export const spingFigure = (figure: Figure, clockwise: boolean = false) => {
 
     return { shape: rotated, value: figure.value };
 }
-
-
