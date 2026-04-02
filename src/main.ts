@@ -1,4 +1,4 @@
-import { checkBorders, checkForColision } from "./colision";
+import { checkForColision } from "./colision";
 import { drawCanvas, drawFigure, drawGameOver, drawLinesNumber, drawNextFigure, drawPause, drawScore, drawStats } from "./draw";
 import { randomFigure } from "./figures";
 import { breakDown, checkConnection, pinFigure, spinFigure } from "./gameLogic";
@@ -16,6 +16,8 @@ let isProcessing = false;
 let isPaused = false;
 let isGameOver = false;
 
+let lastTime = 0;
+let dropCounter = 0;
 
 const canvas = document.getElementById("game") as HTMLCanvasElement;
 const ctx = canvas.getContext("2d")!;
@@ -26,6 +28,7 @@ document.fonts.ready.then(
         drawLinesNumber(lines, ctx)
         drawScore(score, ctx)
     })
+
 
 const spawnFigure = (newFigure: Figure) => {
     fig_y = 0;
@@ -57,35 +60,57 @@ const init = () => {
 init()
 
 
-const interval = setInterval(async () => {
-    // ⛔ If we are processing breakdown/spawning — SKIP this tick
-    if (isGameOver || isProcessing || isPaused || !currentFigure) return;
+const gameLoop = async (time: number) => {
+    const deltaTime = time - lastTime;
+    lastTime = time;
+    const dropInterval = 50; // piece falls every 1000ms
 
-    drawCanvas(arr, ctx);
-    drawFigure(currentFigure, fig_x, fig_y, ctx);
+    if (!isGameOver && !isProcessing && !isPaused) {
+        dropCounter += deltaTime;
 
-    if (checkBorders(currentFigure, fig_x, fig_y) || checkForColision(currentFigure, arr, fig_x, fig_y, "DOWN")) {
+        if (dropCounter > dropInterval) {
+            dropCounter = 0;
+            if (isGameOver || isProcessing || isPaused || !currentFigure) return;
 
-        isProcessing = true;  // 🔒 lock
+            drawCanvas(arr, ctx);
+            drawFigure(currentFigure, fig_x, fig_y, ctx);
 
-        pinFigure(arr, currentFigure, fig_x, fig_y);
-        await breakDown(arr, ctx);    // wait for sand-fall animation
-        const { replacedValues, conectedLines } = await checkConnection(arr, ctx)
-        lines += conectedLines;
-        score += replacedValues;
-        drawLinesNumber(lines, ctx)
-        drawScore(score, ctx)
-        // currentFigure = spawnFigure();  // generate only ONCE
-        currentFigure = spawnFigure(nextFigure)
-        nextFigure = randomFigure()
-        drawNextFigure(nextFigure, COLS + 10, ROWS / 2 , ctx)
+            if (checkForColision(currentFigure, arr, fig_x, fig_y + 1)) {
 
-        isProcessing = false; // 🔓 unlock
+                isProcessing = true;  // 🔒 lock
+
+                pinFigure(arr, currentFigure, fig_x, fig_y);
+                
+                await breakDown(arr, ctx);    // wait for sand-fall animation
+                const { replacedValues, conectedLines } = await checkConnection(arr, ctx)
+    
+                lines += conectedLines;
+                score += replacedValues;
+                drawLinesNumber(lines, ctx)
+                drawScore(score, ctx)
+                // currentFigure = spawnFigure();  // generate only ONCE
+                currentFigure = spawnFigure(nextFigure)
+                nextFigure = randomFigure()
+                drawNextFigure(nextFigure, COLS + 10, ROWS / 2, ctx)
+
+                isProcessing = false; // 🔓 unlock
+            }
+            else {
+                fig_y++;
+            }
+
+            // drawField(grid, ctx);
+            currentFigure && drawFigure(currentFigure, fig_x, fig_y, ctx);
+
+            if (isGameOver)
+                drawGameOver(ctx)
+        }
     }
-    else {
-        fig_y++;
-    }
-}, 50);
+
+    requestAnimationFrame(gameLoop);
+};
+
+requestAnimationFrame(gameLoop);
 
 
 window.addEventListener("keydown", (e) => {
@@ -101,20 +126,20 @@ window.addEventListener("keydown", (e) => {
     if (e.key === "ArrowUp") {
         if (currentFigure) {
             const newFigure = spinFigure(currentFigure)
-            if (!checkForColision(newFigure, arr, fig_x, fig_y) && !checkBorders(newFigure, fig_x, fig_y))
+            if (!checkForColision(newFigure, arr, fig_x, fig_y))
                 currentFigure = newFigure;
         }
     }
     if (e.key === "ArrowDown") {
         if (currentFigure) {
             const newFigure = spinFigure(currentFigure, true)
-            if (!checkForColision(newFigure, arr, fig_x, fig_y) && !checkBorders(newFigure, fig_x, fig_y))
+            if (!checkForColision(newFigure, arr, fig_x, fig_y))
                 currentFigure = newFigure;
         }
     }
     if (e.key === " ") {
         if (currentFigure) {
-            while (!checkBorders(currentFigure, fig_x, fig_y) && !checkForColision(currentFigure, arr, fig_x, fig_y, "DOWN")) {
+            while (!checkForColision(currentFigure, arr, fig_x, fig_y + 1)) {
                 fig_y++
             }
         }

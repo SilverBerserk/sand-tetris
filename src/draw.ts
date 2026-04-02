@@ -59,7 +59,7 @@ export const drawLinesNumber = (lines: number, ctx: CanvasRenderingContext2D) =>
     ctx.fillText(lines.toString(), COLS * FIGURE_MULTIPLIER + 20, ROWS * FIGURE_MULTIPLIER / 4 + 110);
 }
 
-export const drawPause = (ctx) => {
+export const drawPause = (ctx: CanvasRenderingContext2D) => {
     ctx.font = "56px 'Press Start 2P'";
     ctx.fillStyle = 'red';
     ctx.fillText('PAUSE', 90, ROWS * FIGURE_MULTIPLIER / 2 + 5);
@@ -67,7 +67,7 @@ export const drawPause = (ctx) => {
     ctx.fillText('PAUSE', 85, ROWS * FIGURE_MULTIPLIER / 2);
 }
 
-export const drawGameOver = (ctx) => {
+export const drawGameOver = (ctx: CanvasRenderingContext2D) => {
     ctx.font = "56px 'Press Start 2P'";
     ctx.fillStyle = 'red';
     ctx.fillText('GAME', 125, ROWS * FIGURE_MULTIPLIER / 2 - 15);

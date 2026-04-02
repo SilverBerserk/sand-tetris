@@ -1,21 +1,26 @@
 import { drawCanvas } from "./draw";
+import { FIGURES } from "./figures";
 import { COLS, FIGURE_MULTIPLIER, ROWS } from "./settings";
 import { Figure, State } from "./types";
 
 
-export const fillNeighbor = (row: number, col: number, val: number, arr: number[][], state: State) => {
+const MAX_NUM = FIGURES.length + 2
+console.log(MAX_NUM)
+
+export const fillNeighbor = (row: number, col: number, val: number, grid: number[][], state: State) => {
+
 
     // out of bounds
-    if (row < 0 || row >= arr.length || col < 0 || col >= arr[0].length) return;
+    if (row < 0 || row >= grid.length || col < 0 || col >= grid[0].length) return;
 
     // ❗ avoid infinite recursion — if already visited (8), stop
-    if (arr[row][col] === 8) return;
+    if (grid[row][col] === MAX_NUM) return;
 
     // not same value → stop
-    if (arr[row][col] !== val) return;
+    if (grid[row][col] !== val) return;
 
     // mark visited
-    arr[row][col] = 8;
+    grid[row][col] = MAX_NUM;
 
     // update minRow
     if (col === 0 && row < state.minRow) {
@@ -28,20 +33,18 @@ export const fillNeighbor = (row: number, col: number, val: number, arr: number[
     }
 
     // original recursion structure (UNCHANGED):
-    if (row + 1 < arr.length && arr[row + 1][col] === val)
-        fillNeighbor(row + 1, col, val, arr, state);
+    if (row + 1 < grid.length && grid[row + 1][col] === val)
+        fillNeighbor(row + 1, col, val, grid, state);
 
-    if (row - 1 >= 0 && arr[row - 1][col] === val)
-        fillNeighbor(row - 1, col, val, arr, state);
+    if (row - 1 >= 0 && grid[row - 1][col] === val)
+        fillNeighbor(row - 1, col, val, grid, state);
 
-    if (col + 1 < arr[0].length && arr[row][col + 1] === val)
-        fillNeighbor(row, col + 1, val, arr, state);
+    if (col + 1 < grid[0].length && grid[row][col + 1] === val)
+        fillNeighbor(row, col + 1, val, grid, state);
 
-    if (col - 1 >= 0 && arr[row][col - 1] === val)
-        fillNeighbor(row, col - 1, val, arr, state);
+    if (col - 1 >= 0 && grid[row][col - 1] === val)
+        fillNeighbor(row, col - 1, val, grid, state);
 };
-
-
 const sleep = (ms: number) => new Promise(res => setTimeout(res, ms));
 
 
@@ -134,19 +137,23 @@ export const checkConnection = async (arr: number[][], ctx: CanvasRenderingConte
             }
 
             conectedLines++;
+
             replaceValue(arr, 8, 7)
         }
     }
+
+    console.log({ conectedLines })
     if (conectedLines > 0) {
         drawCanvas(arr, ctx)
         await sleep(50)
         replacedValues = replaceValue(arr, 7, 0)
-        await breakDown(arr, ctx);
 
+        await breakDown(arr, ctx);
         const valuesAndLines = await checkConnection(arr, ctx)
         replacedValues += valuesAndLines.replacedValues;
         conectedLines += valuesAndLines.conectedLines;
     }
+
     return { replacedValues, conectedLines };
 };
 
