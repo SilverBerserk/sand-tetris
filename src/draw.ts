@@ -1,30 +1,28 @@
 import { COLORS } from "./colors"
 import { COLS, FIGURE_MULTIPLIER, ROWS, SQUARE_SIZE } from "./settings"
 
-export const drawCanvas = (arr: number[][], ctx: CanvasRenderingContext2D) => {
-    for (let rowIndex = 0; rowIndex < arr.length; rowIndex++) {
-        const row = arr[rowIndex];
-        for (let colIndex = 0; colIndex < row.length; colIndex++) {
-            ctx.fillStyle = COLORS[row[colIndex]]
+export const drawCanvas = (grid: number[][], ctx: CanvasRenderingContext2D) => {
+    grid.forEach((row, rowIndex) => {
+        row.forEach((cell, colIndex) => {
+            ctx.fillStyle = COLORS[cell]
             ctx.fillRect(colIndex * SQUARE_SIZE, rowIndex * SQUARE_SIZE, SQUARE_SIZE, SQUARE_SIZE);
-        }
-    }
+        })
+    })
 }
 
 export const drawFigure = (figure: number[][], x: number, y: number, ctx: CanvasRenderingContext2D) => {
-    for (let rowIndex = 0; rowIndex < figure.length; rowIndex++) {
-        const row = figure[rowIndex];
-        for (let colIndex = 0; colIndex < row.length; colIndex++) {
-            if (row[colIndex] > 0) {
-                ctx.fillStyle = COLORS[row[colIndex]];
+    figure.forEach((row, rowIndex) => {
+        row.forEach((cell, colIndex) => {
+            if (cell > 0) {
+                ctx.fillStyle = COLORS[cell];
                 for (let i = 0; i < FIGURE_MULTIPLIER; i++)
                     for (let j = 0; j < FIGURE_MULTIPLIER; j++) {
                         ctx.fillRect((colIndex * SQUARE_SIZE + x + i) * SQUARE_SIZE,
                             (rowIndex * SQUARE_SIZE + y + j) * SQUARE_SIZE, SQUARE_SIZE, SQUARE_SIZE);
                     }
             }
-        }
-    }
+        })
+    })
 }
 
 export const drawNextFigure = (figure: number[][], x: number, y: number, ctx: CanvasRenderingContext2D) => {
@@ -33,29 +31,17 @@ export const drawNextFigure = (figure: number[][], x: number, y: number, ctx: Ca
     drawFigure(figure, x, y, ctx)
 }
 
-export const drawStats = (ctx: CanvasRenderingContext2D) => {
+
+export const drawStats = (stats: { title: string, value?: number }[], ctx: CanvasRenderingContext2D) => {
+    ctx.fillStyle = COLORS[7];
+    ctx.fillRect(COLS * FIGURE_MULTIPLIER, ROWS * FIGURE_MULTIPLIER / 6 - 30, 160, 350);
+
     ctx.fillStyle = COLORS[6];
     ctx.font = "16px 'Press Start 2P'";
-    ctx.fillText('Score:', COLS * FIGURE_MULTIPLIER + 20, ROWS * FIGURE_MULTIPLIER / 4);
-    ctx.fillText('Lines:', COLS * FIGURE_MULTIPLIER + 20, ROWS * FIGURE_MULTIPLIER / 4 + 80);
-    ctx.fillText('Next:', COLS * FIGURE_MULTIPLIER + 20, ROWS * FIGURE_MULTIPLIER / 4 + 160);
-
-}
-
-export const drawScore = (score: number, ctx: CanvasRenderingContext2D) => {
-    ctx.font = "16px 'Press Start 2P'";
-    ctx.fillStyle = '#FFF';
-    ctx.fillRect(COLS * FIGURE_MULTIPLIER + 15, ROWS * FIGURE_MULTIPLIER / 4, 160, 40)
-    ctx.fillStyle = COLORS[6];
-    ctx.fillText(score.toString(), COLS * FIGURE_MULTIPLIER + 20, ROWS * FIGURE_MULTIPLIER / 4 + 30);
-}
-
-export const drawLinesNumber = (lines: number, ctx: CanvasRenderingContext2D) => {
-    ctx.font = "16px 'Press Start 2P'";
-    ctx.fillStyle = '#FFF';
-    ctx.fillRect(COLS * FIGURE_MULTIPLIER + 15, ROWS * FIGURE_MULTIPLIER / 4 + 80, 160, 40)
-    ctx.fillStyle = COLORS[6];
-    ctx.fillText(lines.toString(), COLS * FIGURE_MULTIPLIER + 20, ROWS * FIGURE_MULTIPLIER / 4 + 110);
+    stats.forEach((state, index) => {
+        ctx.fillText(state.title, COLS * FIGURE_MULTIPLIER + 20, ROWS * FIGURE_MULTIPLIER / 6 + (index * 80));
+        state.value !== undefined && ctx.fillText(state.value.toString(), COLS * FIGURE_MULTIPLIER + 20, ROWS * FIGURE_MULTIPLIER / 6 + (index * 80) + 30);
+    })
 }
 
 export const drawPause = (ctx: CanvasRenderingContext2D) => {

@@ -1,8 +1,8 @@
 import { checkForColision } from "./colision";
-import { drawCanvas, drawFigure, drawGameOver, drawLinesNumber, drawNextFigure, drawPause, drawScore, drawStats } from "./draw";
+import { drawCanvas, drawFigure, drawGameOver, drawNextFigure, drawPause, drawStats } from "./draw";
 import { randomFigure } from "./figures";
 import { breakDown, checkConnection, pinFigure, spinFigure } from "./gameLogic";
-import { COLS, FIGURE_MULTIPLIER, ROWS } from "./settings";
+import { CANVAS_HEIGHT, CANVAS_WIDTH, COLS, FIGURE_MULTIPLIER, ROWS } from "./settings";
 
 let lines = 0;
 let score = 0;
@@ -20,11 +20,10 @@ let lastTime = 0;
 let dropCounter = 0;
 
 const canvas = document.getElementById("game") as HTMLCanvasElement;
-canvas.width = 600
-canvas.height = 800
+canvas.width = CANVAS_WIDTH
+canvas.height = CANVAS_HEIGHT
 canvas.style.marginLeft = "60px"
 canvas.style.marginTop = "60px"
-
 
 const ctx = canvas.getContext("2d")!;
 
@@ -38,9 +37,7 @@ const spawnFigure = (newFigure: number[][]) => {
     fig_y = 0;
     fig_x = COLS / 2 - 8;
 
-    if (!checkForColision(newFigure, arr, fig_x, fig_y))
-        return newFigure
-    else {
+    if (checkForColision(newFigure, arr, fig_x, fig_y)) {
         isProcessing = false;
         isGameOver = true;
         drawGameOver(ctx)
@@ -48,11 +45,12 @@ const spawnFigure = (newFigure: number[][]) => {
             window.localStorage.setItem('sand-tetris', score.toString())
         console.log('Game Over')
     }
+    return newFigure
 }
 
 let arr: number[][];
-let currentFigure: number[][] | undefined;
-let nextFigure: number[][]
+let currentFigure: number[][];
+let nextFigure: number[][];
 
 const init = async () => {
     await loadFonts()
@@ -62,9 +60,11 @@ const init = async () => {
     lines = 0;
     score = 0
 
-    drawStats(ctx)
-    drawLinesNumber(lines, ctx)
-    drawScore(score, ctx)
+    drawStats([{ title: "Lines:", value: lines },
+    { title: "Score:", value: score },
+    { title: "Best:", value: bestScore },
+    { title: "Next:" }], ctx)
+
     drawNextFigure(nextFigure, COLS + 10, ROWS / 2, ctx)
 }
 
@@ -97,9 +97,13 @@ const gameLoop = async (time: number) => {
 
                 lines += conectedLines;
                 score += replacedValues;
-                drawLinesNumber(lines, ctx)
-                drawScore(score, ctx)
+                // drawLinesNumber(lines, ctx)
+                // drawScore(score, ctx)
                 // currentFigure = spawnFigure();  // generate only ONCE
+                drawStats([{ title: "Lines:", value: lines },
+                { title: "Score:", value: score },
+                { title: "Best:", value: bestScore },
+                { title: "Next:" }], ctx)
                 currentFigure = spawnFigure(nextFigure)
                 nextFigure = randomFigure()
                 drawNextFigure(nextFigure, COLS + 10, ROWS / 2, ctx)
