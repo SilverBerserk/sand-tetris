@@ -1,6 +1,5 @@
 import { COLORS } from "./colors"
 import { COLS, FIGURE_MULTIPLIER, ROWS, SQUARE_SIZE } from "./settings"
-import { Figure } from "./types";
 
 export const drawCanvas = (arr: number[][], ctx: CanvasRenderingContext2D) => {
     for (let rowIndex = 0; rowIndex < arr.length; rowIndex++) {
@@ -12,12 +11,12 @@ export const drawCanvas = (arr: number[][], ctx: CanvasRenderingContext2D) => {
     }
 }
 
-export const drawFigure = (figure: Figure, x: number, y: number, ctx: CanvasRenderingContext2D) => {
-    ctx.fillStyle = COLORS[figure.value];
-    for (let rowIndex = 0; rowIndex < figure.shape.length; rowIndex++) {
-        const row = figure.shape[rowIndex];
+export const drawFigure = (figure: number[][], x: number, y: number, ctx: CanvasRenderingContext2D) => {
+    for (let rowIndex = 0; rowIndex < figure.length; rowIndex++) {
+        const row = figure[rowIndex];
         for (let colIndex = 0; colIndex < row.length; colIndex++) {
-            if (row[colIndex] == 1) {
+            if (row[colIndex] > 0) {
+                ctx.fillStyle = COLORS[row[colIndex]];
                 for (let i = 0; i < FIGURE_MULTIPLIER; i++)
                     for (let j = 0; j < FIGURE_MULTIPLIER; j++) {
                         ctx.fillRect((colIndex * SQUARE_SIZE + x + i) * SQUARE_SIZE,
@@ -28,10 +27,10 @@ export const drawFigure = (figure: Figure, x: number, y: number, ctx: CanvasRend
     }
 }
 
-export const drawNextFigure = (figure:Figure, x: number, y: number, ctx: CanvasRenderingContext2D) => {
-    ctx.fillStyle = "#FFF"
+export const drawNextFigure = (figure: number[][], x: number, y: number, ctx: CanvasRenderingContext2D) => {
+    ctx.fillStyle = COLORS[7]
     ctx.fillRect(x * SQUARE_SIZE, y * SQUARE_SIZE, 4 * SQUARE_SIZE * SQUARE_SIZE, 2 * SQUARE_SIZE * SQUARE_SIZE);
-    drawFigure(figure , x, y , ctx)
+    drawFigure(figure, x, y, ctx)
 }
 
 export const drawStats = (ctx: CanvasRenderingContext2D) => {

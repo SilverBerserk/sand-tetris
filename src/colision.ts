@@ -1,21 +1,20 @@
 import { COLS, FIGURE_MULTIPLIER, ROWS, SQUARE_SIZE } from "./settings";
-import { Figure } from "./types";
 
 export const checkForColision = (
-    figure: Figure,
+    figure: number[][],
     grid: number[][],
     x: number,
     y: number,
 ) => {
-    const figureHeight = figure.shape.length * FIGURE_MULTIPLIER;
-    const figureWidth = figure.shape[0].length * FIGURE_MULTIPLIER;
+    const figureHeight = figure.length * FIGURE_MULTIPLIER;
+    const figureWidth = figure[0].length * FIGURE_MULTIPLIER;
 
     // Check boundaries
     if (y + figureHeight >= ROWS || x + figureWidth > COLS || x < 0)
         return true;
 
     // Check collision
-    return figure.shape.some((row, rowIndex) =>
+    return figure.some((row, rowIndex) =>
         row.some((cell, colIndex) => {
             if (!cell) return false;
 

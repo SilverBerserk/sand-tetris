@@ -1,7 +1,7 @@
 import { drawCanvas } from "./draw";
 import { FIGURES } from "./figures";
 import { COLS, FIGURE_MULTIPLIER, ROWS } from "./settings";
-import { Figure, State } from "./types";
+import { State } from "./types";
 
 
 const MAX_NUM = FIGURES.length + 1
@@ -148,30 +148,29 @@ export const checkConnection = async (grid: number[][], ctx: CanvasRenderingCont
 };
 
 
-export const pinFigure = (grid: number[][], figure: Figure, x: number, y: number) => {
-    figure.shape.forEach((row, rowIndex) =>
+export const pinFigure = (grid: number[][], figure: number[][], x: number, y: number) => {
+    figure.forEach((row, rowIndex) =>
         row.forEach((cell, colIndex) => {
-            if (cell == 1)
+            if (cell > 0)
                 for (let i = 0; i < FIGURE_MULTIPLIER; i++)
                     for (let j = 0; j < FIGURE_MULTIPLIER; j++)
-                        grid[rowIndex * FIGURE_MULTIPLIER + y + j][colIndex * FIGURE_MULTIPLIER + x + i] = figure.value
+                        grid[rowIndex * FIGURE_MULTIPLIER + y + j][colIndex * FIGURE_MULTIPLIER + x + i] = cell
         })
     )
 }
 
-export const spinFigure = (figure: Figure, clockwise: boolean = false) => {
-    const { shape } = figure
-    const rows = shape.length;
-    const cols = shape[0].length;
+export const spinFigure = (figure: number[][], clockwise: boolean = false) => {
+    const rows = figure.length;
+    const cols = figure[0].length;
 
     const rotatedShape = Array.from({ length: cols }, () => Array(rows).fill(0));
 
     for (let rowIndex = 0; rowIndex < rows; rowIndex++)
         for (let colIndex = 0; colIndex < cols; colIndex++)
             clockwise
-                ? rotatedShape[colIndex][rows - 1 - rowIndex] = shape[rowIndex][colIndex]
-                : rotatedShape[cols - 1 - colIndex][rowIndex] = shape[rowIndex][colIndex];
+                ? rotatedShape[colIndex][rows - 1 - rowIndex] = figure[rowIndex][colIndex]
+                : rotatedShape[cols - 1 - colIndex][rowIndex] = figure[rowIndex][colIndex];
 
 
-    return { shape: rotatedShape, value: figure.value };
+    return rotatedShape
 }

@@ -3,8 +3,6 @@ import { drawCanvas, drawFigure, drawGameOver, drawLinesNumber, drawNextFigure, 
 import { randomFigure } from "./figures";
 import { breakDown, checkConnection, pinFigure, spinFigure } from "./gameLogic";
 import { COLS, FIGURE_MULTIPLIER, ROWS } from "./settings";
-import { Figure } from "./types";
-
 
 let lines = 0;
 let score = 0;
@@ -16,21 +14,27 @@ let isProcessing = false;
 let isPaused = false;
 let isGameOver = false;
 
+const bestScore = +(localStorage.getItem('sand-tetris') ?? 0)
+
 let lastTime = 0;
 let dropCounter = 0;
 
 const canvas = document.getElementById("game") as HTMLCanvasElement;
+canvas.width = 600
+canvas.height = 800
+canvas.style.marginLeft = "60px"
+canvas.style.marginTop = "60px"
+
+
 const ctx = canvas.getContext("2d")!;
 
-document.fonts.ready.then(
-    () => {
-        drawStats(ctx)
-        drawLinesNumber(lines, ctx)
-        drawScore(score, ctx)
-    })
+export const loadFonts = async () => {
+    await document.fonts.load('16px "Press Start 2P"');
+    await document.fonts.load('56px "Press Start 2P"');
+    await document.fonts.ready;
+};
 
-
-const spawnFigure = (newFigure: Figure) => {
+const spawnFigure = (newFigure: number[][]) => {
     fig_y = 0;
     fig_x = COLS / 2 - 8;
 
@@ -40,20 +44,27 @@ const spawnFigure = (newFigure: Figure) => {
         isProcessing = false;
         isGameOver = true;
         drawGameOver(ctx)
+        if (score > bestScore)
+            window.localStorage.setItem('sand-tetris', score.toString())
         console.log('Game Over')
     }
 }
 
 let arr: number[][];
-let currentFigure: Figure | undefined;
-let nextFigure: Figure
+let currentFigure: number[][] | undefined;
+let nextFigure: number[][]
 
-const init = () => {
+const init = async () => {
+    await loadFonts()
     arr = Array.from({ length: ROWS }, () => Array(COLS).fill(0)) as number[][];
     currentFigure = spawnFigure(randomFigure());
     nextFigure = randomFigure();
     lines = 0;
     score = 0
+
+    drawStats(ctx)
+    drawLinesNumber(lines, ctx)
+    drawScore(score, ctx)
     drawNextFigure(nextFigure, COLS + 10, ROWS / 2, ctx)
 }
 
@@ -80,10 +91,10 @@ const gameLoop = async (time: number) => {
                 isProcessing = true;  // 🔒 lock
 
                 pinFigure(arr, currentFigure, fig_x, fig_y);
-                
+
                 await breakDown(arr, ctx);    // wait for sand-fall animation
                 const { replacedValues, conectedLines } = await checkConnection(arr, ctx)
-    
+
                 lines += conectedLines;
                 score += replacedValues;
                 drawLinesNumber(lines, ctx)
@@ -120,7 +131,7 @@ window.addEventListener("keydown", (e) => {
             fig_x--;
     }
     if (e.key === "ArrowRight") {
-        if (fig_x + (currentFigure?.shape[0].length ?? 0) * FIGURE_MULTIPLIER < COLS)
+        if (fig_x + (currentFigure?.[0].length ?? 0) * FIGURE_MULTIPLIER < COLS)
             fig_x++;
     }
     if (e.key === "ArrowUp") {
