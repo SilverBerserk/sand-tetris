@@ -4,23 +4,22 @@ import { COLS, FIGURE_MULTIPLIER, ROWS } from "./settings";
 import { Figure, State } from "./types";
 
 
-const MAX_NUM = FIGURES.length + 2
-console.log(MAX_NUM)
+const MAX_NUM = FIGURES.length + 1
+
+const sleep = (ms: number) => new Promise(res => setTimeout(res, ms));
 
 export const fillNeighbor = (row: number, col: number, val: number, grid: number[][], state: State) => {
-
-
     // out of bounds
     if (row < 0 || row >= grid.length || col < 0 || col >= grid[0].length) return;
 
     // ❗ avoid infinite recursion — if already visited (8), stop
-    if (grid[row][col] === MAX_NUM) return;
+    if (grid[row][col] === MAX_NUM + 1) return;
 
     // not same value → stop
     if (grid[row][col] !== val) return;
 
     // mark visited
-    grid[row][col] = MAX_NUM;
+    grid[row][col] = MAX_NUM + 1;
 
     // update minRow
     if (col === 0 && row < state.minRow) {
@@ -45,10 +44,8 @@ export const fillNeighbor = (row: number, col: number, val: number, grid: number
     if (col - 1 >= 0 && grid[row][col - 1] === val)
         fillNeighbor(row, col - 1, val, grid, state);
 };
-const sleep = (ms: number) => new Promise(res => setTimeout(res, ms));
 
-
-export const breakDown = async (arr: number[][], ctx: CanvasRenderingContext2D) => {
+export const breakDown = async (grid: number[][], ctx: CanvasRenderingContext2D) => {
     let moved = true;
 
     while (moved) {
@@ -57,69 +54,66 @@ export const breakDown = async (arr: number[][], ctx: CanvasRenderingContext2D) 
         // start from second-to-last row (ROWS - 2) so row+1 is always valid
         for (let row = ROWS - 2; row >= 0; row--) {
             for (let col = 0; col < COLS; col++) {
-                if (arr[row][col] === 0) continue;
+                if (grid[row][col] === 0) continue;
 
                 // try to fall straight down
-                if (arr[row + 1][col] === 0) {
-                    const prevValue = arr[row][col]
-                    arr[row][col] = 0;
-                    arr[row + 1][col] = prevValue;
+                if (grid[row + 1][col] === 0) {
+                    const prevValue = grid[row][col]
+                    grid[row][col] = 0;
+                    grid[row + 1][col] = prevValue;
                     moved = true;
                     continue;
                 }
 
                 // try down-left
-                if (col > 0 && arr[row][col - 1] === 0 && arr[row + 1][col - 1] === 0) {
-                    const prevValue = arr[row][col]
-                    arr[row][col] = 0;
-                    arr[row + 1][col - 1] = prevValue;
+                if (col > 0 && grid[row][col - 1] === 0 && grid[row + 1][col - 1] === 0) {
+                    const prevValue = grid[row][col]
+                    grid[row][col] = 0;
+                    grid[row + 1][col - 1] = prevValue;
                     moved = true;
                     continue;
                 }
 
                 // try down-right
-                if (col < COLS - 1 && arr[row][col + 1] === 0 && arr[row + 1][col + 1] === 0) {
-                    const prevValue = arr[row][col]
-                    arr[row][col] = 0;
-                    arr[row + 1][col + 1] = prevValue;
+                if (col < COLS - 1 && grid[row][col + 1] === 0 && grid[row + 1][col + 1] === 0) {
+                    const prevValue = grid[row][col]
+                    grid[row][col] = 0;
+                    grid[row + 1][col + 1] = prevValue;
                     moved = true;
                     continue;
                 }
             }
         }
-        drawCanvas(arr, ctx);
+        drawCanvas(grid, ctx);
         await sleep(50)
     }
 };
 
-const replaceValue = (arr: number[][], val1: number, val2: number) => {
+const replaceValue = (grid: number[][], val1: number, val2: number) => {
     let valuesReplaced = 0;
-    for (let rowIndex = 0; rowIndex < arr.length; rowIndex++) {
-        const row = arr[rowIndex];
-        for (let colIndex = 0; colIndex < row.length; colIndex++) {
-            if (row[colIndex] == val1) {
+    grid.forEach(row => 
+        row.forEach((cell, colIndex) => {
+            if (cell == val1) {
                 row[colIndex] = val2
-                valuesReplaced++;
+                valuesReplaced++
             }
-        }
-    }
+        })
+    )
     return valuesReplaced;
 }
 
-
-
-export const checkConnection = async (arr: number[][], ctx: CanvasRenderingContext2D) => {
+export const checkConnection = async (grid: number[][], ctx: CanvasRenderingContext2D) => {
     // let isConnection = false;
     let conectedLines = 0;
     let replacedValues = 0;
     let state = { maxCol: 0, minRow: ROWS };
 
     // Continue climbing up ONLY if the next row is full
-    while (arr[state.minRow - 1][0] > 0 && !arr[ROWS - 1].includes(0)) {
-        let newArr = arr.map(row => [...row]);  // deep clone
+    while (grid[state.minRow - 1][0] > 0 && !grid[ROWS - 1].includes(0)) {
+        let newArr = grid.map(row => [...row]);  // deep clone
 
         // Start at bottom-left (THIS WAS WRONG BEFORE)
-        const startVal = arr[state.minRow - 1][0];
+        const startVal = grid[state.minRow - 1][0];
 
         // Flood-fill the row above (same value!)
         fillNeighbor(state.minRow - 1, 0, startVal, newArr, state);
@@ -128,28 +122,24 @@ export const checkConnection = async (arr: number[][], ctx: CanvasRenderingConte
         if (state.maxCol === COLS - 1) {
             state.maxCol = 0
 
-
             // copy newArr contents into the original arr object
-            for (let r = 0; r < ROWS; r++) {
-                for (let c = 0; c < COLS; c++) {
-                    arr[r][c] = newArr[r][c];
-                }
-            }
+            for (let rowIndex = 0; rowIndex < ROWS; rowIndex++)
+                for (let colIndex = 0; colIndex < COLS; colIndex++)
+                    grid[rowIndex][colIndex] = newArr[rowIndex][colIndex];
 
             conectedLines++;
 
-            replaceValue(arr, 8, 7)
+            replaceValue(grid, MAX_NUM + 1, MAX_NUM)
         }
     }
 
-    console.log({ conectedLines })
     if (conectedLines > 0) {
-        drawCanvas(arr, ctx)
+        drawCanvas(grid, ctx)
         await sleep(50)
-        replacedValues = replaceValue(arr, 7, 0)
+        replacedValues = replaceValue(grid, MAX_NUM, 0)
 
-        await breakDown(arr, ctx);
-        const valuesAndLines = await checkConnection(arr, ctx)
+        await breakDown(grid, ctx);
+        const valuesAndLines = await checkConnection(grid, ctx)
         replacedValues += valuesAndLines.replacedValues;
         conectedLines += valuesAndLines.conectedLines;
     }
@@ -158,18 +148,15 @@ export const checkConnection = async (arr: number[][], ctx: CanvasRenderingConte
 };
 
 
-export const pinFigure = (arr: number[][], figure: Figure, x: number, y: number) => {
-    for (let rowIndex = 0; rowIndex < figure.shape.length; rowIndex++) {
-        const row = figure.shape[rowIndex];
-        for (let colIndex = 0; colIndex < row.length; colIndex++) {
-            if (row[colIndex] == 1) {
+export const pinFigure = (grid: number[][], figure: Figure, x: number, y: number) => {
+    figure.shape.forEach((row, rowIndex) =>
+        row.forEach((cell, colIndex) => {
+            if (cell == 1)
                 for (let i = 0; i < FIGURE_MULTIPLIER; i++)
-                    for (let j = 0; j < FIGURE_MULTIPLIER; j++) {
-                        arr[rowIndex * FIGURE_MULTIPLIER + y + j][colIndex * FIGURE_MULTIPLIER + x + i] = figure.value
-                    }
-            }
-        }
-    }
+                    for (let j = 0; j < FIGURE_MULTIPLIER; j++)
+                        grid[rowIndex * FIGURE_MULTIPLIER + y + j][colIndex * FIGURE_MULTIPLIER + x + i] = figure.value
+        })
+    )
 }
 
 export const spinFigure = (figure: Figure, clockwise: boolean = false) => {
@@ -179,14 +166,12 @@ export const spinFigure = (figure: Figure, clockwise: boolean = false) => {
 
     const rotatedShape = Array.from({ length: cols }, () => Array(rows).fill(0));
 
-    for (let r = 0; r < rows; r++) {
-        for (let c = 0; c < cols; c++) {
-            if (clockwise)
-                rotatedShape[c][rows - 1 - r] = shape[r][c]
-            else
-                rotatedShape[cols - 1 - c][r] = shape[r][c];
-        }
-    }
+    for (let rowIndex = 0; rowIndex < rows; rowIndex++)
+        for (let colIndex = 0; colIndex < cols; colIndex++)
+            clockwise
+                ? rotatedShape[colIndex][rows - 1 - rowIndex] = shape[rowIndex][colIndex]
+                : rotatedShape[cols - 1 - colIndex][rowIndex] = shape[rowIndex][colIndex];
+
 
     return { shape: rotatedShape, value: figure.value };
 }
