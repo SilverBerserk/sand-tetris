@@ -1,4 +1,4 @@
-export const COLORS = [
+const COLORS = [
     "#0B1020",
     "#FF9F1C", // orange
     "#2EC4B6", // cyan
@@ -8,3 +8,5 @@ export const COLORS = [
     "#3A86FF", // blue
     "#FFFFFF"  // white
 ];
+
+export const getColor = (index: number) => COLORS[index]

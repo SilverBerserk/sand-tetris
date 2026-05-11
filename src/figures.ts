@@ -9,5 +9,4 @@ export const FIGURES = [
 
 ]
 
-
 export const randomFigure = () => FIGURES[Math.floor(Math.random() * FIGURES.length)]

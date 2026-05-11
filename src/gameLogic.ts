@@ -1,14 +1,12 @@
 import { drawCanvas } from "./draw";
 import { FIGURES } from "./figures";
 import { COLS, FIGURE_MULTIPLIER, ROWS } from "./settings";
-import { State } from "./types";
-
 
 const MAX_NUM = FIGURES.length + 1
 
 const sleep = (ms: number) => new Promise(res => setTimeout(res, ms));
 
-export const fillNeighbor = (row: number, col: number, val: number, grid: number[][], state: State) => {
+export const fillNeighbor = (row: number, col: number, val: number, grid: number[][], state: { minRow: number, maxCol: number }) => {
     // out of bounds
     if (row < 0 || row >= grid.length || col < 0 || col >= grid[0].length) return;
 
@@ -91,7 +89,7 @@ export const breakDown = async (grid: number[][], ctx: CanvasRenderingContext2D)
 
 const replaceValue = (grid: number[][], val1: number, val2: number) => {
     let valuesReplaced = 0;
-    grid.forEach(row => 
+    grid.forEach(row =>
         row.forEach((cell, colIndex) => {
             if (cell == val1) {
                 row[colIndex] = val2

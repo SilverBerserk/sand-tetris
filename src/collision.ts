@@ -16,19 +16,13 @@ export const checkForColision = (
     // Check collision
     return figure.some((row, rowIndex) =>
         row.some((cell, colIndex) => {
-            if (!cell) return false;
-
-            for (let i = 0; i < FIGURE_MULTIPLIER; i++) {
-                for (let j = 0; j < FIGURE_MULTIPLIER; j++) {
-
-                    if (
-                        grid[rowIndex * SQUARE_SIZE + y + j]
-                        [colIndex * SQUARE_SIZE + x + i]
-                    ) {
-                        return true;
-                    }
-                }
-            }
+            if (cell)
+                for (let i = 0; i < FIGURE_MULTIPLIER; i++)
+                    for (let j = 0; j < FIGURE_MULTIPLIER; j++)
+                        if (
+                            grid[rowIndex * SQUARE_SIZE + y + j]
+                            [colIndex * SQUARE_SIZE + x + i]
+                        ) return true;
 
             return false;
         })
