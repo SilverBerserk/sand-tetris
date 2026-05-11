@@ -80,50 +80,63 @@ const init = async () => {
     drawNextFigure(nextFigure, COLS + 10, ROWS / 2, ctx)
 }
 
-init()
-
+await init()
 
 const gameLoop = async (time: number) => {
     const deltaTime = time - lastTime;
     lastTime = time;
+
     const dropInterval = 50; // piece falls every 1000ms
 
-    if (!isGameOver && !isProcessing && !isPaused) {
+    if (isGameOver || isPaused) {
+        requestAnimationFrame(gameLoop);
+        return;
+    }
+
+    // don't accumulate time while processing
+    if (!isProcessing) {
         dropCounter += deltaTime;
 
-        if (dropCounter > dropInterval) {
+        if (dropCounter >= dropInterval) {
             dropCounter = 0;
-            if (isGameOver || isProcessing || isPaused || !currentFigure) return;
 
-            drawCanvas(arr, ctx);
-            drawFigure(currentFigure, fig_x, fig_y, ctx);
+            if (currentFigure) {
+                if (checkForColision(currentFigure, arr, fig_x, fig_y + 1)) {
+                    isProcessing = true;
 
-            if (checkForColision(currentFigure, arr, fig_x, fig_y + 1)) {
-                isProcessing = true;  // 🔒 lock
+                    pinFigure(arr, currentFigure, fig_x, fig_y);
 
-                pinFigure(arr, currentFigure, fig_x, fig_y);
+                    await breakDown(arr, ctx);
 
-                await breakDown(arr, ctx);    // wait for sand-fall animation
-                const { replacedValues, conectedLines } = await checkConnection(arr, ctx)
+                    const { replacedValues, conectedLines } =
+                        await checkConnection(arr, ctx);
 
-                lines += conectedLines;
-                score += replacedValues;
-                drawStats(stats, ctx)
-                currentFigure = spawnFigure(nextFigure)
-                nextFigure = randomFigure()
-                drawNextFigure(nextFigure, COLS + 10, ROWS / 2, ctx)
+                    lines += conectedLines;
+                    score += replacedValues;
 
-                isProcessing = false; // 🔓 unlock
+                    drawStats(stats, ctx);
+
+                    currentFigure = spawnFigure(nextFigure);
+                    nextFigure = randomFigure();
+
+                    drawNextFigure(nextFigure, COLS + 10, ROWS / 2, ctx);
+
+                    isProcessing = false;
+                } else {
+                    fig_y++;
+                }
             }
-            else {
-                fig_y++;
-            }
-
-            currentFigure && drawFigure(currentFigure, fig_x, fig_y, ctx);
-
-            if (isGameOver)
-                drawGameOver(ctx)
         }
+    }
+
+    drawCanvas(arr, ctx);
+
+    if (currentFigure) {
+        drawFigure(currentFigure, fig_x, fig_y, ctx);
+    }
+
+    if (isGameOver) {
+        drawGameOver(ctx);
     }
 
     requestAnimationFrame(gameLoop);
