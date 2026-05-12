@@ -2,7 +2,7 @@ import { checkForColision } from "./collision";
 import { drawCanvas, drawFigure, drawGameOver, drawNextFigure, drawPause, drawStats } from "./draw";
 import { randomFigure } from "./figures";
 import { breakDown, checkConnection, pinFigure, spinFigure } from "./gameLogic";
-import { CANVAS_HEIGHT, CANVAS_WIDTH, COLS, FIGURE_MULTIPLIER, ROWS } from "./settings";
+import { CANVAS_HEIGHT, CANVAS_WIDTH, COLS, FIGURE_MULTIPLIER, LOCAL_STORAGE_NAME, ROWS } from "./settings";
 
 enum KEYS {
     ARROW_UP = "ArrowUp",
@@ -24,7 +24,7 @@ let isProcessing = false;
 let isPaused = false;
 let isGameOver = false;
 
-const bestScore = +(localStorage.getItem('sand-tetris') ?? 0)
+const bestScore = +(localStorage.getItem(LOCAL_STORAGE_NAME) ?? 0)
 
 let lastTime = 0;
 let dropCounter = 0;
@@ -43,7 +43,7 @@ export const loadFonts = async () => {
     await document.fonts.ready;
 };
 
-const stats = [{ title: "Lines:", value: lines },
+const getStats = () => [{ title: "Lines:", value: lines },
 { title: "Score:", value: score },
 { title: "Best:", value: bestScore },
 { title: "Next:" }]
@@ -57,7 +57,7 @@ const spawnFigure = (newFigure: number[][]) => {
         isGameOver = true;
         drawGameOver(ctx)
         if (score > bestScore)
-            window.localStorage.setItem('sand-tetris', score.toString())
+            window.localStorage.setItem(LOCAL_STORAGE_NAME, score.toString())
         console.log('Game Over')
     }
     return newFigure
@@ -75,7 +75,7 @@ const init = async () => {
     lines = 0;
     score = 0
 
-    drawStats(stats, ctx)
+    drawStats(getStats(), ctx)
 
     drawNextFigure(nextFigure, COLS + 10, ROWS / 2, ctx)
 }
@@ -114,7 +114,7 @@ const gameLoop = async (time: number) => {
                     lines += conectedLines;
                     score += replacedValues;
 
-                    drawStats(stats, ctx);
+                    drawStats(getStats(), ctx);
 
                     currentFigure = spawnFigure(nextFigure);
                     nextFigure = randomFigure();
