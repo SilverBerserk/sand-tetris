@@ -5,7 +5,7 @@ import { CANVAS_HEIGHT, CANVAS_WIDTH, COLS, ROWS, LOCAL_STORAGE_NAME } from "./s
 
 enum KEYS {
     ARROW_UP = "ArrowUp",
-    ARROW_DOWN = "ArrrowDown",
+    ARROW_DOWN = "ArrowDown",
     ARROW_LEFT = "ArrowLeft",
     ARROW_RIGHT = "ArrowRight",
     ENTER = "Enter",
@@ -13,26 +13,24 @@ enum KEYS {
     R = "r"
 }
 
-let lines = 0;
-let score = 0;
+let lines = 0,
+    score = 0,
+    fig_x = 0,
+    fig_y = 0,
+    isProcessing = false,
+    isPaused = false,
+    isGameOver = false;
 
-let fig_x = 0;
-let fig_y = 0;
-
-let isProcessing = false;
-let isPaused = false;
-let isGameOver = false;
-
-const bestScore = +(localStorage.getItem(LOCAL_STORAGE_NAME) ?? 0)
+const bestScore = +(localStorage.getItem(LOCAL_STORAGE_NAME) ?? 0);
 
 let lastTime = 0;
 let dropCounter = 0;
 
 const canvas = document.getElementById("game") as HTMLCanvasElement;
-canvas.width = CANVAS_WIDTH
-canvas.height = CANVAS_HEIGHT
-canvas.style.marginLeft = "60px"
-canvas.style.marginTop = "60px"
+canvas.width = CANVAS_WIDTH;
+canvas.height = CANVAS_HEIGHT;
+canvas.style.marginLeft = "60px";
+canvas.style.marginTop = "60px";
 
 const ctx = canvas.getContext("2d")!;
 
@@ -42,10 +40,12 @@ export const loadFonts = async () => {
     await document.fonts.ready;
 };
 
-const getStats = () => [{ title: "Lines:", value: lines },
-{ title: "Score:", value: score },
-{ title: "Best:", value: bestScore },
-{ title: "Next:" }]
+const getStats = () => [
+    { title: "Lines:", value: lines },
+    { title: "Score:", value: score },
+    { title: "Best:", value: bestScore },
+    { title: "Next:" }
+];
 
 const spawnFigure = (newFigure: number[][]) => {
     fig_y = 0;
@@ -54,38 +54,35 @@ const spawnFigure = (newFigure: number[][]) => {
     if (checkForColision(grid, newFigure, fig_x, fig_y)) {
         isProcessing = false;
         isGameOver = true;
-        drawGameOver(ctx)
+        drawGameOver(ctx);
         if (score > bestScore)
-            window.localStorage.setItem(LOCAL_STORAGE_NAME, score.toString())
-        console.log('Game Over')
+            window.localStorage.setItem(LOCAL_STORAGE_NAME, score.toString());
+        console.log("Game Over");
     }
-    return newFigure
-}
-
+    return newFigure;
+};
 
 let grid: number[][];
 let currentFigure: number[][];
 let nextFigure: number[][];
 
-
 const init = async () => {
-    await loadFonts()
+    await loadFonts();
     grid = generateGrid(0);
     currentFigure = spawnFigure(randomFigure());
     nextFigure = randomFigure();
     lines = 0;
     score = 0;
 
+    drawCanvas(grid, generateGrid(-1), ctx);
+    drawStats(getStats(), ctx);
+    drawNextFigure(nextFigure, COLS + 10, ROWS / 2, ctx);
+};
 
-    drawCanvas(grid, generateGrid(-1), ctx)
-    drawStats(getStats(), ctx)
+await init();
 
-    drawNextFigure(nextFigure, COLS + 10, ROWS / 2, ctx)
-}
-
-await init()
-
-const cleanFigureSpace = (figure: number[][]) => drawFigure(figure, fig_x, fig_y, ctx, 0)
+const cleanFigureSpace = (figure: number[][]) =>
+    drawFigure(figure, fig_x, fig_y, ctx, 0);
 
 const gameLoop = async (time: number) => {
     const deltaTime = time - lastTime;
@@ -98,7 +95,7 @@ const gameLoop = async (time: number) => {
         return;
     }
 
-    const prevGrid = cloneGrid(grid)
+    const prevGrid = cloneGrid(grid);
 
     if (!isProcessing) {
         dropCounter += deltaTime;
@@ -111,7 +108,7 @@ const gameLoop = async (time: number) => {
                     isProcessing = true;
 
                     grid = pinFigure(grid, currentFigure, fig_x, fig_y);
-                    drawFigure(currentFigure, fig_x, fig_y, ctx)
+                    drawFigure(currentFigure, fig_x, fig_y, ctx);
                     grid = await breakDown(grid, ctx);
 
                     const { replacedValues, conectedLines, grid: newGrid } =
@@ -119,19 +116,18 @@ const gameLoop = async (time: number) => {
 
                     lines += conectedLines;
                     score += replacedValues;
-                    grid = newGrid
+                    grid = newGrid;
                     drawStats(getStats(), ctx);
 
                     currentFigure = spawnFigure(nextFigure);
                     nextFigure = randomFigure();
-
                     drawNextFigure(nextFigure, COLS + 10, ROWS / 2, ctx);
 
                     isProcessing = false;
                 } else {
-                    cleanFigureSpace(currentFigure)
+                    cleanFigureSpace(currentFigure);
                     fig_y++;
-                    drawFigure(currentFigure, fig_x, fig_y, ctx)
+                    drawFigure(currentFigure, fig_x, fig_y, ctx);
                 }
             }
         }
@@ -139,13 +135,8 @@ const gameLoop = async (time: number) => {
 
     drawCanvas(grid, prevGrid, ctx);
 
-    if (currentFigure) {
-        drawFigure(currentFigure, fig_x, fig_y, ctx);
-    }
-
-    if (isGameOver) {
-        drawGameOver(ctx);
-    }
+    if (currentFigure) drawFigure(currentFigure, fig_x, fig_y, ctx);
+    if (isGameOver) drawGameOver(ctx);
 
     requestAnimationFrame(gameLoop);
 };
@@ -154,63 +145,58 @@ requestAnimationFrame(gameLoop);
 
 window.addEventListener("keydown", (e) => {
     e.preventDefault();
-    if (!isProcessing) {
-        if (!isPaused && !isGameOver) {
-            if (e.key === KEYS.ARROW_LEFT) {
-                if (!checkForColision(grid, currentFigure, fig_x - 1, fig_y)) {
-                    cleanFigureSpace(currentFigure)
-                    fig_x--;
-                }
+    if (isProcessing) return;
+
+    if (!isPaused && !isGameOver) {
+        if (e.key === KEYS.ARROW_LEFT) {
+            if (!checkForColision(grid, currentFigure, fig_x - 1, fig_y)) {
+                cleanFigureSpace(currentFigure);
+                fig_x--;
             }
-            if (e.key === KEYS.ARROW_RIGHT) {
-                if (!checkForColision(grid, currentFigure, fig_x + 1, fig_y)) {
-                    cleanFigureSpace(currentFigure)
-                    fig_x++;
-                }
+        }
+        if (e.key === KEYS.ARROW_RIGHT) {
+            if (!checkForColision(grid, currentFigure, fig_x + 1, fig_y)) {
+                cleanFigureSpace(currentFigure);
+                fig_x++;
             }
-            if (e.key === KEYS.ARROW_UP) {
-                if (currentFigure) {
-                    const newFigure = spinFigure(currentFigure)
-                    if (!checkForColision(grid, newFigure, fig_x, fig_y)) {
-                        cleanFigureSpace(currentFigure)
-                        currentFigure = newFigure;
-                    }
-                }
-            }
-            if (e.key === KEYS.ARROW_DOWN) {
-                if (currentFigure) {
-                    const newFigure = spinFigure(currentFigure, true)
-                    if (!checkForColision(grid, newFigure, fig_x, fig_y))
-                        currentFigure = newFigure;
-                }
-            }
-            if (e.key === KEYS.SPACE) {
-                cleanFigureSpace(currentFigure)
-                if (currentFigure) {
-                    while (!checkForColision(grid, currentFigure, fig_x, fig_y + 1))
-                        fig_y++
+        }
+        if (e.key === KEYS.ARROW_UP) {
+            if (currentFigure) {
+                const rotated = spinFigure(currentFigure);
+                if (!checkForColision(grid, rotated, fig_x, fig_y)) {
+                    cleanFigureSpace(currentFigure);
+                    currentFigure = rotated;
                 }
             }
         }
-        if (e.key === KEYS.R) {
+        if (e.key === KEYS.ARROW_DOWN) {
+            if (currentFigure) {
+                const rotated = spinFigure(currentFigure, true);
+                if (!checkForColision(grid, rotated, fig_x, fig_y))
+                    currentFigure = rotated;
+            }
+        }
+        if (e.key === KEYS.SPACE) {
+            cleanFigureSpace(currentFigure);
+            if (currentFigure)
+                while (!checkForColision(grid, currentFigure, fig_x, fig_y + 1))
+                    fig_y++;
+        }
+    }
+
+    if (e.key === KEYS.R) {
+        isGameOver = false;
+        isPaused = false;
+        init();
+    }
+    if (e.key === KEYS.ENTER) {
+        if (isGameOver) {
+            init();
             isGameOver = false;
             isPaused = false;
-            init()
-        }
-        if (e.key === KEYS.ENTER) {
-            if (isGameOver) {
-                init()
-                isGameOver = false;
-                isPaused = false
-            }
-            else {
-                if (!isPaused)
-                    drawPause(ctx)
-                else
-                    drawCanvas(grid, generateGrid(-1), ctx)
-
-                isPaused = !isPaused
-            }
+        } else {
+            isPaused ? drawCanvas(grid, generateGrid(-1), ctx) : drawPause(ctx);
+            isPaused = !isPaused;
         }
     }
 });
