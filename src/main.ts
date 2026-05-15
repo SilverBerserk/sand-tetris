@@ -1,8 +1,8 @@
 import { checkForColision } from "./collision";
-import { drawCanvas, drawFigure, drawGameOver, drawNextFigure, drawPause, drawStats } from "./draw";
+import { drawCanvas, drawFigure, drawGameOver, drawGridBackground, drawNextFigure, drawPause, drawStats } from "./draw";
 import { randomFigure } from "./figures";
-import { breakDown, checkConnection, pinFigure, spinFigure } from "./gameLogic";
-import { CANVAS_HEIGHT, CANVAS_WIDTH, COLS, FIGURE_MULTIPLIER, LOCAL_STORAGE_NAME, ROWS } from "./settings";
+import { breakDown, checkConnection, cloneGrid, pinFigure, spinFigure } from "./gameLogic";
+import { CANVAS_HEIGHT, CANVAS_WIDTH, COLS, ROWS, LOCAL_STORAGE_NAME } from "./settings";
 
 enum KEYS {
     ARROW_UP = "ArrowUp",
@@ -52,7 +52,7 @@ const spawnFigure = (newFigure: number[][]) => {
     fig_y = 0;
     fig_x = COLS / 2 - 8;
 
-    if (checkForColision(newFigure, arr, fig_x, fig_y)) {
+    if (checkForColision(newFigure, grid, fig_x, fig_y)) {
         isProcessing = false;
         isGameOver = true;
         drawGameOver(ctx)
@@ -63,24 +63,30 @@ const spawnFigure = (newFigure: number[][]) => {
     return newFigure
 }
 
-let arr: number[][];
+
+let grid: number[][];
 let currentFigure: number[][];
 let nextFigure: number[][];
 
+
 const init = async () => {
     await loadFonts()
-    arr = Array.from({ length: ROWS }, () => Array(COLS).fill(0)) as number[][];
+    grid = Array.from({ length: ROWS }, () => Array(COLS).fill(0)) as number[][];
     currentFigure = spawnFigure(randomFigure());
     nextFigure = randomFigure();
     lines = 0;
     score = 0
 
+
+    drawGridBackground(ctx)
     drawStats(getStats(), ctx)
 
     drawNextFigure(nextFigure, COLS + 10, ROWS / 2, ctx)
 }
 
 await init()
+
+const cleanFigureSpace = (figure: number[][]) => drawFigure(figure, fig_x, fig_y, ctx, 0)
 
 const gameLoop = async (time: number) => {
     const deltaTime = time - lastTime;
@@ -93,6 +99,8 @@ const gameLoop = async (time: number) => {
         return;
     }
 
+    const prevGrid = cloneGrid(grid)
+
     // don't accumulate time while processing
     if (!isProcessing) {
         dropCounter += deltaTime;
@@ -101,19 +109,19 @@ const gameLoop = async (time: number) => {
             dropCounter = 0;
 
             if (currentFigure) {
-                if (checkForColision(currentFigure, arr, fig_x, fig_y + 1)) {
+                if (checkForColision(currentFigure, grid, fig_x, fig_y + 1)) {
                     isProcessing = true;
 
-                    pinFigure(arr, currentFigure, fig_x, fig_y);
+                    grid = pinFigure(grid, currentFigure, fig_x, fig_y);
 
-                    await breakDown(arr, ctx);
+                    grid = await breakDown(grid, ctx);
 
-                    const { replacedValues, conectedLines } =
-                        await checkConnection(arr, ctx);
+                    const { replacedValues, conectedLines, grid: newGrid } =
+                        await checkConnection(grid, ctx);
 
                     lines += conectedLines;
                     score += replacedValues;
-
+                    grid = newGrid
                     drawStats(getStats(), ctx);
 
                     currentFigure = spawnFigure(nextFigure);
@@ -123,13 +131,15 @@ const gameLoop = async (time: number) => {
 
                     isProcessing = false;
                 } else {
+                    cleanFigureSpace(currentFigure)
                     fig_y++;
+                    drawFigure(currentFigure, fig_x, fig_y, ctx)
                 }
             }
         }
     }
 
-    drawCanvas(arr, ctx);
+    drawCanvas(grid, prevGrid, ctx);
 
     if (currentFigure) {
         drawFigure(currentFigure, fig_x, fig_y, ctx);
@@ -149,32 +159,38 @@ window.addEventListener("keydown", (e) => {
     e.preventDefault();
     if (!isPaused && !isGameOver && !isProcessing) {
         if (e.key === KEYS.ARROW_LEFT) {
-            if (fig_x > 0)
+            if (!checkForColision(currentFigure, grid, fig_x - 1, fig_y)) {
+                cleanFigureSpace(currentFigure)
                 fig_x--;
+            }
         }
         if (e.key === KEYS.ARROW_RIGHT) {
-            if (fig_x + (currentFigure?.[0].length ?? 0) * FIGURE_MULTIPLIER < COLS)
+            if (!checkForColision(currentFigure, grid, fig_x + 1, fig_y)) {
+                cleanFigureSpace(currentFigure)
                 fig_x++;
+            }
         }
         if (e.key === KEYS.ARROW_UP) {
             if (currentFigure) {
                 const newFigure = spinFigure(currentFigure)
-                if (!checkForColision(newFigure, arr, fig_x, fig_y))
+                if (!checkForColision(newFigure, grid, fig_x, fig_y)) {
+                    cleanFigureSpace(currentFigure)
                     currentFigure = newFigure;
+                }
             }
         }
         if (e.key === KEYS.ARROW_DOWN) {
             if (currentFigure) {
                 const newFigure = spinFigure(currentFigure, true)
-                if (!checkForColision(newFigure, arr, fig_x, fig_y))
+                if (!checkForColision(newFigure, grid, fig_x, fig_y))
                     currentFigure = newFigure;
             }
         }
         if (e.key === KEYS.SPACE) {
+            cleanFigureSpace(currentFigure)
             if (currentFigure) {
-                while (!checkForColision(currentFigure, arr, fig_x, fig_y + 1)) {
+                while (!checkForColision(currentFigure, grid, fig_x, fig_y + 1))
                     fig_y++
-                }
             }
         }
     }

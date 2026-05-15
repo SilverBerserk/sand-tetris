@@ -1,20 +1,28 @@
 import { getColor } from "./colors"
 import { COLS, FIGURE_MULTIPLIER, ROWS, SQUARE_SIZE } from "./settings"
 
-export const drawCanvas = (grid: number[][], ctx: CanvasRenderingContext2D) => {
+export const drawCanvas = (grid: number[][], prevGrid: number[][], ctx: CanvasRenderingContext2D) => {
     grid.forEach((row, rowIndex) => {
         row.forEach((cell, colIndex) => {
-            ctx.fillStyle = getColor(cell)
-            ctx.fillRect(colIndex * SQUARE_SIZE, rowIndex * SQUARE_SIZE, SQUARE_SIZE, SQUARE_SIZE);
+            if (prevGrid[rowIndex][colIndex] !== grid[rowIndex][colIndex]) {
+                ctx.fillStyle = getColor(cell)
+                ctx.fillRect(colIndex * SQUARE_SIZE, rowIndex * SQUARE_SIZE, SQUARE_SIZE, SQUARE_SIZE);
+            }
         })
     })
 }
 
-export const drawFigure = (figure: number[][], x: number, y: number, ctx: CanvasRenderingContext2D) => {
+export const drawGridBackground = (ctx: CanvasRenderingContext2D) => {
+    ctx.fillStyle = getColor(0)
+    ctx.fillRect(0, 0, COLS * SQUARE_SIZE, ROWS * SQUARE_SIZE)
+}
+
+export const drawFigure = (figure: number[][], x: number, y: number, ctx: CanvasRenderingContext2D, color?: number) => {
     figure.forEach((row, rowIndex) => {
         row.forEach((cell, colIndex) => {
             if (!cell) return;
-            ctx.fillStyle = getColor(cell);
+
+            ctx.fillStyle = getColor(color ?? cell);
             ctx.fillRect(
                 (x + colIndex * FIGURE_MULTIPLIER) * SQUARE_SIZE,
                 (y + rowIndex * FIGURE_MULTIPLIER) * SQUARE_SIZE,

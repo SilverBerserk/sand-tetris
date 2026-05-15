@@ -6,18 +6,21 @@ const MAX_NUM = FIGURES.length + 1
 
 const sleep = (ms: number) => new Promise(res => setTimeout(res, ms));
 
+export const cloneGrid = (grid: number[][]) => grid.map(row => [...row])
+
 export const fillNeighbor = (row: number, col: number, val: number, grid: number[][], state: { minRow: number, maxCol: number }) => {
+    let newGrid = cloneGrid(grid)
     // out of bounds
-    if (row < 0 || row >= grid.length || col < 0 || col >= grid[0].length) return;
+    if (row < 0 || row >= newGrid.length || col < 0 || col >= newGrid[0].length) return newGrid;
 
     // ❗ avoid infinite recursion — if already visited (8), stop
-    if (grid[row][col] === MAX_NUM + 1) return;
+    if (newGrid[row][col] === MAX_NUM + 1) return newGrid;
 
     // not same value → stop
-    if (grid[row][col] !== val) return;
+    if (newGrid[row][col] !== val) return newGrid;
 
     // mark visited
-    grid[row][col] = MAX_NUM + 1;
+    newGrid[row][col] = MAX_NUM + 1;
 
     // update minRow
     if (col === 0 && row < state.minRow) {
@@ -30,66 +33,71 @@ export const fillNeighbor = (row: number, col: number, val: number, grid: number
     }
 
     // original recursion structure (UNCHANGED):
-    if (row + 1 < grid.length && grid[row + 1][col] === val)
-        fillNeighbor(row + 1, col, val, grid, state);
+    if (row + 1 < newGrid.length && newGrid[row + 1][col] === val)
+        newGrid = fillNeighbor(row + 1, col, val, newGrid, state);
 
-    if (row - 1 >= 0 && grid[row - 1][col] === val)
-        fillNeighbor(row - 1, col, val, grid, state);
+    if (row - 1 >= 0 && newGrid[row - 1][col] === val)
+        newGrid = fillNeighbor(row - 1, col, val, newGrid, state);
 
-    if (col + 1 < grid[0].length && grid[row][col + 1] === val)
-        fillNeighbor(row, col + 1, val, grid, state);
+    if (col + 1 < newGrid[0].length && newGrid[row][col + 1] === val)
+        newGrid = fillNeighbor(row, col + 1, val, newGrid, state);
 
-    if (col - 1 >= 0 && grid[row][col - 1] === val)
-        fillNeighbor(row, col - 1, val, grid, state);
+    if (col - 1 >= 0 && newGrid[row][col - 1] === val)
+        newGrid = fillNeighbor(row, col - 1, val, newGrid, state);
+
+    return newGrid
 };
 
 export const breakDown = async (grid: number[][], ctx: CanvasRenderingContext2D) => {
     let moved = true;
-
+    const newGrid = cloneGrid(grid)
     while (moved) {
         moved = false;
+        const prevGrid = cloneGrid(newGrid)
 
         // start from second-to-last row (ROWS - 2) so row+1 is always valid
         for (let row = ROWS - 2; row >= 0; row--) {
             for (let col = 0; col < COLS; col++) {
-                if (grid[row][col] === 0) continue;
+                if (newGrid[row][col] === 0) continue;
 
                 // try to fall straight down
-                if (grid[row + 1][col] === 0) {
-                    const prevValue = grid[row][col]
-                    grid[row][col] = 0;
-                    grid[row + 1][col] = prevValue;
+                if (newGrid[row + 1][col] === 0) {
+                    const prevValue = newGrid[row][col]
+                    newGrid[row][col] = 0;
+                    newGrid[row + 1][col] = prevValue;
                     moved = true;
                     continue;
                 }
 
                 // try down-left
-                if (col > 0 && grid[row][col - 1] === 0 && grid[row + 1][col - 1] === 0) {
-                    const prevValue = grid[row][col]
-                    grid[row][col] = 0;
-                    grid[row + 1][col - 1] = prevValue;
+                if (col > 0 && newGrid[row][col - 1] === 0 && newGrid[row + 1][col - 1] === 0) {
+                    const prevValue = newGrid[row][col]
+                    newGrid[row][col] = 0;
+                    newGrid[row + 1][col - 1] = prevValue;
                     moved = true;
                     continue;
                 }
 
                 // try down-right
-                if (col < COLS - 1 && grid[row][col + 1] === 0 && grid[row + 1][col + 1] === 0) {
-                    const prevValue = grid[row][col]
-                    grid[row][col] = 0;
-                    grid[row + 1][col + 1] = prevValue;
+                if (col < COLS - 1 && newGrid[row][col + 1] === 0 && newGrid[row + 1][col + 1] === 0) {
+                    const prevValue = newGrid[row][col]
+                    newGrid[row][col] = 0;
+                    newGrid[row + 1][col + 1] = prevValue;
                     moved = true;
                     continue;
                 }
             }
         }
-        drawCanvas(grid, ctx);
+        drawCanvas(newGrid, prevGrid, ctx);
         await sleep(50)
     }
+    return newGrid
 };
 
 const replaceValue = (grid: number[][], val1: number, val2: number) => {
+    const newGrid = cloneGrid(grid)
     let valuesReplaced = 0;
-    grid.forEach(row =>
+    newGrid.forEach(row =>
         row.forEach((cell, colIndex) => {
             if (cell == val1) {
                 row[colIndex] = val2
@@ -97,7 +105,7 @@ const replaceValue = (grid: number[][], val1: number, val2: number) => {
             }
         })
     )
-    return valuesReplaced;
+    return { valuesReplaced, grid: newGrid };
 }
 
 export const checkConnection = async (grid: number[][], ctx: CanvasRenderingContext2D) => {
@@ -105,56 +113,59 @@ export const checkConnection = async (grid: number[][], ctx: CanvasRenderingCont
     let conectedLines = 0;
     let replacedValues = 0;
     let state = { maxCol: 0, minRow: ROWS };
+    let newGrid = cloneGrid(grid);  // deep clone
+    let oldGrid = cloneGrid(grid)
 
     // Continue climbing up ONLY if the next row is full
-    while (grid[state.minRow - 1][0] > 0 && !grid[ROWS - 1].includes(0)) {
-        let newArr = grid.map(row => [...row]);  // deep clone
+    while (newGrid[state.minRow - 1][0] > 0 && !newGrid[ROWS - 1].includes(0)) {
 
+        let localGrid = cloneGrid(newGrid)
         // Start at bottom-left (THIS WAS WRONG BEFORE)
-        const startVal = grid[state.minRow - 1][0];
+        const startVal = newGrid[state.minRow - 1][0];
 
         // Flood-fill the row above (same value!)
-        fillNeighbor(state.minRow - 1, 0, startVal, newArr, state);
+        localGrid = fillNeighbor(state.minRow - 1, 0, startVal, localGrid, state);
 
         // If we reached last column → connection exists
         if (state.maxCol === COLS - 1) {
             state.maxCol = 0
 
-            // copy newArr contents into the original arr object
-            for (let rowIndex = 0; rowIndex < ROWS; rowIndex++)
-                for (let colIndex = 0; colIndex < COLS; colIndex++)
-                    grid[rowIndex][colIndex] = newArr[rowIndex][colIndex];
+            newGrid = cloneGrid(localGrid);
 
             conectedLines++;
 
-            replaceValue(grid, MAX_NUM + 1, MAX_NUM)
+            ({ grid: newGrid } = replaceValue(newGrid, MAX_NUM + 1, MAX_NUM))
         }
     }
 
     if (conectedLines > 0) {
-        drawCanvas(grid, ctx)
-        await sleep(50)
-        replacedValues = replaceValue(grid, MAX_NUM, 0)
-
-        await breakDown(grid, ctx);
-        const valuesAndLines = await checkConnection(grid, ctx)
+        drawCanvas(newGrid, oldGrid, ctx)
+        await sleep(50);
+        oldGrid = cloneGrid(newGrid);
+        ({ valuesReplaced: replacedValues, grid: newGrid } = replaceValue(newGrid, MAX_NUM, 0))
+        drawCanvas(newGrid, oldGrid, ctx)
+        newGrid = await breakDown(newGrid, ctx);
+        const valuesAndLines = await checkConnection(newGrid, ctx)
         replacedValues += valuesAndLines.replacedValues;
         conectedLines += valuesAndLines.conectedLines;
+        newGrid = valuesAndLines.grid
     }
 
-    return { replacedValues, conectedLines };
+    return { replacedValues, conectedLines, grid: newGrid };
 };
 
 
 export const pinFigure = (grid: number[][], figure: number[][], x: number, y: number) => {
+    let newGrid = cloneGrid(grid)
     figure.forEach((row, rowIndex) =>
         row.forEach((cell, colIndex) => {
             if (cell > 0)
                 for (let i = 0; i < FIGURE_MULTIPLIER; i++)
                     for (let j = 0; j < FIGURE_MULTIPLIER; j++)
-                        grid[rowIndex * FIGURE_MULTIPLIER + y + j][colIndex * FIGURE_MULTIPLIER + x + i] = cell
+                        newGrid[rowIndex * FIGURE_MULTIPLIER + y + j][colIndex * FIGURE_MULTIPLIER + x + i] = cell
         })
     )
+    return newGrid
 }
 
 export const spinFigure = (figure: number[][], clockwise: boolean = false) => {
