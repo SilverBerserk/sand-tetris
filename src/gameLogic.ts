@@ -1,10 +1,12 @@
 import { drawCanvas } from "./draw";
 import { FIGURES } from "./figures";
-import { COLS, FIGURE_MULTIPLIER, ROWS } from "./settings";
+import { COLS, FIGURE_MULTIPLIER, ROWS, SQUARE_SIZE } from "./settings";
 
 const MAX_NUM = FIGURES.length + 1
 
 const sleep = (ms: number) => new Promise(res => setTimeout(res, ms));
+
+export const generateGrid = (i: number) => Array.from({ length: ROWS }, () => Array(COLS).fill(i)) as number[][]
 
 export const cloneGrid = (grid: number[][]) => grid.map(row => [...row])
 
@@ -183,3 +185,33 @@ export const spinFigure = (figure: number[][], clockwise: boolean = false) => {
 
     return rotatedShape
 }
+
+
+export const checkForColision = (
+    grid: number[][],
+    figure: number[][],
+    x: number,
+    y: number,
+) => {
+    const figureHeight = figure.length * FIGURE_MULTIPLIER;
+    const figureWidth = figure[0].length * FIGURE_MULTIPLIER;
+
+    // Check boundaries
+    if (y + figureHeight >= ROWS || x + figureWidth > COLS || x < 0)
+        return true;
+
+    // Check collision
+    return figure.some((row, rowIndex) =>
+        row.some((cell, colIndex) => {
+            if (cell)
+                for (let i = 0; i < FIGURE_MULTIPLIER; i++)
+                    for (let j = 0; j < FIGURE_MULTIPLIER; j++)
+                        if (
+                            grid[rowIndex * SQUARE_SIZE + y + j]
+                            [colIndex * SQUARE_SIZE + x + i]
+                        ) return true;
+
+            return false;
+        })
+    );
+};
